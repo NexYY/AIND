@@ -1,4 +1,3 @@
-
 import minimax
 import gamestate as game
 
