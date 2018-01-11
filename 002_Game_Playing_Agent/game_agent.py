@@ -125,6 +125,20 @@ class MinimaxPlayer(IsolationPlayer):
     minimax to return a good move before the search time limit expires.
     """
 
+    def checkTimeout(func):
+        def wrap_f(self, *args, **kwargs):
+            if self.should_timeout():
+                raise SearchTimeout()
+            return func(*args, **kwargs)
+        return wrap_f
+
+    def checkDepth(func):
+        def wrap_f(self, game, depth, *args, **kwargs):
+            if depth == 0:
+                return self.score(game, self), (-1, -1)           
+            return func(*args, **kwargs)
+        return wrap_f
+    
     def get_move(self, game, time_left):
         """Search for the best move from the available legal moves and return a
         result before the time limit expires.
@@ -170,7 +184,8 @@ class MinimaxPlayer(IsolationPlayer):
         # Return the best move from the last completed search iteration
         return best_move
 
-    def minimax(self, game, depth, maximizing_player=None):
+    @checkTimeout
+    def minimax(self, game, depth):
         """Implement depth-limited minimax search algorithm as described in
         the lectures.
 
@@ -209,78 +224,64 @@ class MinimaxPlayer(IsolationPlayer):
                 each helper function or else your agent will timeout during
                 testing.
         """
-        if maximizing_player is null:
-            raise AttributeError
+        # if maximizing_player is None:
+        #    raise AttributeError
 
-        if maximizing_player:
+        # check how is the active player
+        if game.active_player == self:
             return self.max_value(game, depth)
         else:
             return self.min_value(game, depth)
 
     @checkTimeout
     @checkDepth
-    def min_value(self, gameState, alpha=None, beta=None):
+    def min_value(self, game, depth, alpha=None, beta=None):
         """ Return the value for a win (+1) if the game is over,
         otherwise return the minimum value over all legal child
         nodes.
         """
-        v : float = float("inf")
+        # v : float = float("inf")
+        v = float("inf")
         next_move = (-1, -1)
 
-        #if terminal_test(gameState):
+        # if terminal_test(gameState):
         #    return 1  # by Assumption 2
-        #for m in gameState.get_legal_moves():
+        # for m in gameState.get_legal_moves():
         for m in game.get_legal_moves(game.get_opponent(self)):
-            next_score, _ = self.max_value(game.forecast_move(move), depth - 1, alpha, beta)
-            ##v = min(v, max_value(gameState.forecast_move(m)))
-            #looking for the smallest value in MIN
+            next_score, _ = self.max_value(game.forecast_move(m), depth - 1, alpha, beta)
+            # #v = min(v, max_value(gameState.forecast_move(m)))
+            # looking for the smallest value in MIN
             if v > next_score:
                 v = next_score
-                next_move = move
+                next_move = m
             if alpha is not None and beta is not None:
                 if v <= alpha:
                     return v, next_move                
                 beta = beta if beta < v else v
         return v, next_move
-        #return v
 
     @checkTimeout
     @checkDepth
-    def max_value(self, game, gameState, alpha=None, beta=None):
+    def max_value(self, game, depth, alpha=None, beta=None):
         """ Return the value for a loss (-1) if the game is over,
         otherwise return the maximum value over all legal child
         nodes.
         """
-        v : float = float("-inf")
+        # v : float = float("-inf")
+        v = float("-inf")
         next_move = (-1, -1)
 
         for m in game.get_legal_moves(game.get_opponent(self)):
-            next_score, _ = self.min_value(game.forecast_move(move), depth - 1, alpha, beta)
-            #looking for the biggest value in MAX
+            next_score, _ = self.min_value(game.forecast_move(m), depth - 1, alpha, beta)
+            # looking for the biggest value in MAX
             if v < next_score:
                 v = next_score
-                next_move = move
+                next_move = m
             if alpha is not None and beta is not None:
                 if v >= beta:
                     return v, next_move
                 alpha = alpha if alpha > v else v
         return v, next_move
-
-
-    def checkTimeout(func):
-        def wrap_f(*args, **kwargs):
-            if self.should_timeout():
-                raise Timeout()            
-            return func(*args, **kwargs)
-        return wrap_f
-
-    def checkDepth(func):
-        def wrap_f(*args, **kwargs):
-            if depth == 0:
-                return self.score(game, self), (-1, -1)           
-            return func(*args, **kwargs)
-        return wrap_f
-
 
 class AlphaBetaPlayer(IsolationPlayer):
     """Game-playing agent that chooses a move using iterative deepening minimax
