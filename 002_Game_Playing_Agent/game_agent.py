@@ -242,18 +242,26 @@ class MinimaxPlayer(IsolationPlayer):
         """
 
         # check how is the active player
-        if game.active_player == self:
-            return self.max_value(game, depth)[1]
-        else:
-            return self.min_value(game, depth)[1]
-
+        #if game.active_player == self:
+        #    return self.max_value(game, depth)[1]
+        #else:
+        #    return self.min_value(game, depth)[1]
+        return self.max_value(game, depth)[1]
+        #move = (-1, -1)
+        #legal_moves = game.get_legal_moves()
+        #if len(legal_moves)==0:
+        #    return move
+        #score_i, move = max ((self.min_value(game, depth-1), p) for p in legal_moves )
+        #return move 
+        
     @checkTimeout
     @checkDepth
     def min_value(self, game, depth):
         min_value_tmp = float("inf")
         best_next_move = (-1, -1)
 
-        for m in game.get_legal_moves(game.get_opponent(self)):
+        #for m in game.get_legal_moves(game.get_opponent()):
+        for m in game.get_legal_moves(game.active_player):
             next_score = self.max_value(game.forecast_move(m), depth - 1)[0]
             if min_value_tmp > next_score:
                 min_value_tmp = next_score
@@ -266,7 +274,8 @@ class MinimaxPlayer(IsolationPlayer):
         max_value_tmp = float("-inf")
         best_next_move = (-1, -1)
 
-        for m in game.get_legal_moves(game.get_opponent(self)):
+        #for m in game.get_legal_moves(game.get_opponent()):
+        for m in game.get_legal_moves(game.active_player):
             next_score = self.min_value(game.forecast_move(m), depth - 1)[0]
             # looking for the biggest value in MAX
             if max_value_tmp < next_score:
