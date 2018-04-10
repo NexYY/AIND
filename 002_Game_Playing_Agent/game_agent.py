@@ -320,9 +320,21 @@ class AlphaBetaPlayer(IsolationPlayer):
             (-1, -1) if there are no available legal moves.
         """
         self.time_left = time_left
+        
+        legal_moves = game.get_legal_moves(game.active_player)
+        if not legal_moves:  # if no legal moves
+            return -1, -1
 
-        # TODO: finish this function!
-        raise NotImplementedError
+        next_move = random.choice(legal_moves)
+        depth_i = 1 # the iterative depth
+        try:
+            while True: # while time limit not reached
+                next_move = self.alphabeta(game, depth=depth_i)
+                depth_i += 1
+        except SearchTimeout:
+            return next_move
+            
+        return next_move
 
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf")):
         """Implement depth-limited minimax search with alpha-beta pruning as
