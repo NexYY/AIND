@@ -456,9 +456,6 @@ class AlphaBetaPlayer(IsolationPlayer):
         if not legal_moves or depth == 0 or game.is_winner(self):
             return self.score(game, self)
 
-        #for move in legal_moves:
-            #forecast_game = game.forecast_move(move)
-
         if minMax == "max":
             score = float("-inf")
             for move in legal_moves:
@@ -469,7 +466,6 @@ class AlphaBetaPlayer(IsolationPlayer):
                     return score # Found candidate upper value
                 # lower bound
                 alpha = max(alpha, score)
-            return score
         elif minMax == "min":
             score = float("inf")
             for move in legal_moves:
@@ -480,11 +476,8 @@ class AlphaBetaPlayer(IsolationPlayer):
                     return score # Found candidate lower score
                 # Update upper bound
                 beta = min(beta, score)
-            return score
         else:
             raise Exception()
-
-        #return candidate
         return score
 
 
