@@ -332,8 +332,6 @@ class AlphaBetaPlayer(IsolationPlayer):
             return best_move
 
         try:
-            # The try/except block will automatically catch the exception
-            # raised when the timer is about to expire.
             for depth in range(1, len(game.get_blank_spaces())):
                 new_move = self.alphabeta(game, depth)
                 # Reached end game
@@ -348,25 +346,6 @@ class AlphaBetaPlayer(IsolationPlayer):
 
         # Return the best move from the last completed search iteration
         return best_move
-        #try 2018-05-05
-        """        
-        self.time_left = time_left
-        
-        legal_moves = game.get_legal_moves(game.active_player)
-        if not legal_moves:  # if no legal moves
-            return -1, -1
-
-        next_move = random.choice(legal_moves)
-        depth_i = 1 # the iterative depth
-        try:
-            while True: # while time limit not reached
-                next_move = self.alphabeta(game, depth=depth_i)
-                depth_i += 1
-        except SearchTimeout:
-            return next_move
-            
-        return next_move
-        """
 
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf")):
         """Implement depth-limited minimax search with alpha-beta pruning as
@@ -413,23 +392,32 @@ class AlphaBetaPlayer(IsolationPlayer):
                 each helper function or else your agent will timeout during
                 testing.
         """
-        #try 2018-05-05
-        """
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
 
-        # keeps dfs visited path
-        path = []
-        score, path = self._alphabeta_min_max(game, depth, path, minMax="max")
+        best_score = float("-inf")
+        #best_move = ()
+        best_move = (-1, -1)
+        legal_moves = game.get_legal_moves()
+        if not legal_moves or depth == 0:
+            return self.score(game, self)
+        # Iterate over all possible candidate moves
+        
+        for cand_move in legal_moves:
+            # Obtain copy of game.
+            cand_game = game.forecast_move(cand_move)
+            #cand_score = self.min_value(cand_game, depth-1, alpha, beta)
+            cand_score = self.alphabeta_min_max(cand_game, depth=depth-1, alpha=alpha, beta=beta, maximizing_player=True, minMax = "min")
+            # Update best_move and max_value if cand_score has max value
+            if cand_score > best_score:
+                best_move, best_score = cand_move, cand_score
+            # Best move found.
+            alpha = max(alpha, cand_score)
+            # Update lower bound for pruning
+        return best_move
 
-        if len(path) == 0:
-            return float("-inf"),(-1,-1)
-        return score, path[0]
-        """
-        if self.time_left() < self.TIMER_THRESHOLD:
-            raise SearchTimeout()
-
-        return self._alphabeta_max(game, depth, alpha=float("-inf"), beta=float("inf"))
+        #return self._alphabeta_max(game, depth, alpha=float("-inf"), beta=float("inf"))
+        #return self.alphabeta_min_max(game, depth, alpha=float("-inf"), beta=float("inf"))
 
 
     def _alphabeta_max(self, game, depth, alpha=float("-inf"), beta=float("inf")):
@@ -437,12 +425,18 @@ class AlphaBetaPlayer(IsolationPlayer):
             raise SearchTimeout()
 
         best_score = float("-inf")
-        best_move = ()
+        #best_move = ()
+        best_move = (-1, -1)
+        legal_moves = game.get_legal_moves()
+        if not legal_moves or depth == 0:
+            return self.score(game, self), (-1, -1)
         # Iterate over all possible candidate moves
-        for cand_move in game.get_legal_moves():
+        
+        for cand_move in legal_moves:
             # Obtain copy of game.
             cand_game = game.forecast_move(cand_move)
-            cand_score = self.min_value(cand_game, depth-1, alpha, beta)
+            #cand_score = self.min_value(cand_game, depth-1, alpha, beta)
+            cand_score = self.alphabeta_min_max(cand_game, depth=depth-1, alpha=alpha, beta=beta, maximizing_player=True, minMax = "min")
             # Update best_move and max_value if cand_score has max value
             if cand_score > best_score:
                 best_move, best_score = cand_move, cand_score
@@ -454,65 +448,41 @@ class AlphaBetaPlayer(IsolationPlayer):
             # Update lower bound for pruning
         return best_move
 
-    def _alphabeta_min_max(self, game, depth, alpha=float("-inf"), beta=float("inf"), maximizing_player=True, minMax = "min"):
+    def alphabeta_min_max(self, game, depth, alpha=float("-inf"), beta=float("inf"), maximizing_player=True, minMax = "min"):
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
-
-        if depth == 0:
-            return self.score(game, self), path
         
-        legal_moves = game.get_legal_moves(game.active_player)
+        legal_moves = game.get_legal_moves()
+        if not legal_moves or depth == 0 or game.is_winner(self):
+            return self.score(game, self)
 
-        for move in legal_moves:
-            forecast_game = game.forecast_move(move)
+        #for move in legal_moves:
+            #forecast_game = game.forecast_move(move)
 
-            if minMax == "max":
-                """
-                candidate = (float("-inf"), [(-1,-1)])
-                move_score = self._alphabeta_min_max(forecast_game, depth - 1, path, alpha, beta, maximizing_player=False, minMax="min")[0]
-                # If it better keeps
-                if move_score > candidate[0]:
-                    candidate = (move_score, path+[move])
-
-                #pruning
-                if move_score >= beta:
-                    return move_score, path+[move]
-
-                alpha = max(alpha,move_score)
-                """
-                score = float("-inf")
-
-                for move in game.get_legal_moves():
-                    score = max(score, self.min_value(game.forecast_move(move), depth-1, alpha, beta))                    
-                    if score >= beta:
-                        return score # Found candidate upper value
-                    # lower bound
-                    alpha = max(alpha, score)
-            elif minMax == "min":
-                """
-                candidate = (float("inf"), [(-1,-1)])
-                move_score = self._alphabeta_min_max(forecast_game, depth - 1, path, alpha, beta, maximizing_player=False, minMax="max")[0]
-
-                # If it better keeps
-                if move_score < candidate[0]:
-                    candidate = (move_score,move)
-
-                # pruning
-                if candidate[0] <= alpha:
-                    return move_score,path+[move]
-
-                beta = min(beta, move_score)
-                """
-                score = float("inf")
-
-                for move in game.get_legal_moves():
-                    score = min(score, self.max_value(game.forecast_move(move), depth-1, alpha, beta))
-                    if score <= alpha:
-                        return score # Found candidate lower score
-                    # Update upper bound
-                    beta = min(beta, score)
-            else:
-                raise Exception()
+        if minMax == "max":
+            score = float("-inf")
+            for move in legal_moves:
+                #score = max(score, self.min_value(game.forecast_move(move), depth-1, alpha, beta))                    
+                forecast_game = game.forecast_move(move)
+                score = max(score, self.alphabeta_min_max(forecast_game, depth=depth-1, alpha=alpha, beta=beta, maximizing_player=True, minMax = "min"))
+                if score >= beta:
+                    return score # Found candidate upper value
+                # lower bound
+                alpha = max(alpha, score)
+            return score
+        elif minMax == "min":
+            score = float("inf")
+            for move in legal_moves:
+                forecast_game = game.forecast_move(move)
+                #score = min(score, self.max_value(game.forecast_move(move), depth-1, alpha, beta))
+                score = min(score, self.alphabeta_min_max(forecast_game, depth=depth-1, alpha=alpha, beta=beta, maximizing_player=True, minMax = "max"))
+                if score <= alpha:
+                    return score # Found candidate lower score
+                # Update upper bound
+                beta = min(beta, score)
+            return score
+        else:
+            raise Exception()
 
         #return candidate
         return score
