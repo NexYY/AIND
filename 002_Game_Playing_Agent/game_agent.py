@@ -3,7 +3,7 @@ test your agent's strength against a set of known agents using tournament.py
 and include the results in your report.
 """
 import random
-
+import math
 
 class SearchTimeout(Exception):
     """Subclass base exception for code clarity. """
@@ -19,8 +19,7 @@ def score(func):
         return func(game, player)
     return wrap_sf
 
-@score
-def custom_score(game, player):
+def _custom_score(game, player):
     """Calculate the heuristic value of a game state from the point of view
     of the given player.
 
@@ -47,7 +46,59 @@ def custom_score(game, player):
     return float(len(game.get_legal_moves(player)))
 
 @score
-def custom_score_2(game, player):
+def custom_score(game, player):
+    """ Difference between the players legal moves and the opponents legal move, highlighting how many legal moves the next legal moves really has.
+
+    Parameters
+    ----------
+    game : `isolation.Board`
+        An instance of `isolation.Board` encoding the current state of the
+        game (e.g., player locations and blocked cells).
+
+    player : object
+        A player instance in the current game (i.e., an object corresponding to
+        one of the player objects `game.__player_1__` or `game.__player_2__`.)
+
+    Returns
+    -------
+    float
+        The heuristic value of the current game state to the specified player.
+    """
+    if game.is_loser(player):
+        return float('-inf')
+
+    if game.is_winner(player):
+        return float('inf')
+
+    own_legal_moves = game.get_legal_moves(player)
+    own_moves = len(own_legal_moves)
+    for move in own_legal_moves:
+        own_moves += len(_board_move(game, move))
+
+    opp_legal_moves = game.get_legal_moves(game.get_opponent(player))
+    opp_moves = len(opp_legal_moves)
+    for move in opp_legal_moves:
+        opp_moves += len(_board_move(game, move))
+
+    return float(own_moves - opp_moves)
+
+
+def _board_move(boardGame, loc):
+    """Generate the list of possible moves for an L-shaped motion (like a
+    knight in chess).
+    """
+    if loc == None:
+        return boardGame.get_blank_spaces()
+
+    r, c = loc
+    directions = [(-2, -1), (-2, 1), (-1, -2), (-1, 2),
+                  (1, -2), (1, 2), (2, -1), (2, 1)]
+    valid_moves = [(r + dr, c + dc) for dr, dc in directions
+                   if boardGame.move_is_legal((r + dr, c + dc))]
+    random.shuffle(valid_moves)
+    return valid_moves
+
+def _custom_score_2(game, player):
     """Calculate the heuristic value of a game state from the point of view
     of the given player.
 
@@ -74,7 +125,42 @@ def custom_score_2(game, player):
     return float(own_moves - opp_moves)
 
 @score
-def custom_score_3(game, player):
+def custom_score_2(game, player):
+    """"Heuristic which computes the difference in legal moves of the two players
+    while penalizes player for moving to a corner
+    Difference in legal moves of the two players, taking into account, that corner positions are bad and have to be penlized.
+
+    Parameters
+    ----------
+    game : `isolation.Board`
+        An instance of `isolation.Board` encoding the current state of the
+        game (e.g., player locations and blocked cells).
+
+    player : object
+        A player instance in the current game (i.e., an object corresponding to
+        one of the player objects `game.__player_1__` or `game.__player_2__`.)
+
+    Returns
+    -------
+    float
+        The heuristic value of the current game state to the specified player.
+    """
+    if game.is_loser(player):
+        return float('-inf')
+
+    if game.is_winner(player):
+        return float('inf')
+
+    own_moves = len(game.get_legal_moves(player))
+    opp_moves = len(game.get_legal_moves(game.get_opponent(player)))
+
+    corner_weight = 2
+    if game.get_player_location(player) in [(0, 0), (0, game.height - 1), (game.width - 1, 0), (game.width - 1, game.height - 1)]:
+        own_moves -= corner_weight
+
+    return float(own_moves - opp_moves)
+
+def _custom_score_3(game, player):
     """Calculate the heuristic value of a game state from the point of view
     of the given player.
 
@@ -100,6 +186,44 @@ def custom_score_3(game, player):
     w, h = game.width / 2., game.height / 2.
     y, x = game.get_player_location(player)
     return float((h - y)**2 + (w - x)**2)
+
+@score
+def custom_score_3(game, player):
+    """The third heuristic evaluates again the difference in legal moves between the player and the opponent, however it also additionally ranks moves higher which are farther away from the opponent’s current position. This is based on the principle, that in isolation you need to have movement space to win, staying away from the opponent to not get isolated.
+    
+    Parameters
+    ----------
+    game : `isolation.Board`
+        An instance of `isolation.Board` encoding the current state of the
+        game (e.g., player locations and blocked cells).
+
+    player : object
+        A player instance in the current game (i.e., an object corresponding to
+        one of the player objects `game.__player_1__` or `game.__player_2__`.)
+
+    Returns
+    -------
+    float
+        The heuristic value of the current game state to the specified player.
+    """
+
+    if game.is_loser(player):
+        return float('-inf')
+
+    if game.is_winner(player):
+        return float('inf')
+
+    opp_player = game.get_opponent(player)
+    own_moves = len(game.get_legal_moves(player))
+    opp_moves = len(game.get_legal_moves(opp_player))
+
+    player_location = game.get_player_location(player)
+    opp_location = game.get_player_location(opp_player)
+    x_distance = math.pow(player_location[0] - opp_location[0], 2)
+    y_distance = math.pow(player_location[1] - opp_location[1], 2)
+    distance_bet_player_opp = math.sqrt(x_distance + y_distance)
+
+    return float((own_moves + distance_bet_player_opp) - opp_moves)
 
 
 class IsolationPlayer:
